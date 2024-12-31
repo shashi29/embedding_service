@@ -1,52 +1,59 @@
-from datetime import datetime
 from typing import Dict, Optional
-import threading
-import logging
-
-logger = logging.getLogger(__name__)
+from src.models.pydantic_models import StatusResponse, ResultResponse
+from src.utils.logger import get_logger
 
 class RequestTracker:
     def __init__(self):
-        self.requests = {}
-        self.lock = threading.Lock()
-
-    def add_request(self, request_id: str, text: str, priority: str):
-        with self.lock:
-            self.requests[request_id] = {
-                "text": text,
-                "priority": priority,
-                "status": "submitted",
-                "submit_time": datetime.now().isoformat(),
-                "queue_enter_time": None,
-                "processing_start_time": None,
-                "completion_time": None,
-                "cache_hit": None,
-                "error": None
-            }
-
-    def update_status(self, request_id: str, status: str, **kwargs):
-        with self.lock:
-            if request_id in self.requests:
-                self.requests[request_id]["status"] = status
-                self.requests[request_id].update(kwargs)
-            else:
-                logger.warning(f"Attempted to update non-existent request: {request_id}")
-
-    def get_request_info(self, request_id: str) -> Optional[dict]:
-        with self.lock:
-            request_info = self.requests.get(request_id)
-            if request_info:
-                request_info["text_preview"] = request_info["text"][:50] + "..."
-                return request_info
+        self.requests: Dict[str, Dict] = {}
+        self.logger = get_logger()
+    
+    async def update_queue_position(self, request_id: str):
+        self.requests[request_id] = {
+            "status": "pending",
+            "queue_position": len(self.requests) + 1
+        }
+    
+    async def complete_request(self, request_id: str, embedding: list[float], cache_hit: bool):
+        self.requests[request_id] = {
+            "status": "completed",
+            "embedding": embedding,
+            "cache_hit": cache_hit,
+            "queue_position": None
+        }
+    
+    async def fail_request(self, request_id: str, error: str):
+        self.requests[request_id] = {
+            "status": "failed",
+            "error": error,
+            "queue_position": None
+        }
+    
+    async def get_status(self, request_id: str) -> Optional[StatusResponse]:
+        if request_id not in self.requests:
             return None
-
-    def cleanup_old_requests(self, max_age_hours: int = 24):
-        with self.lock:
-            current_time = datetime.now()
-            to_remove = []
-            for request_id, info in self.requests.items():
-                submit_time = datetime.fromisoformat(info["submit_time"])
-                if (current_time - submit_time).total_seconds() > max_age_hours * 3600:
-                    to_remove.append(request_id)
-            for request_id in to_remove:
-                del self.requests[request_id]
+            
+        request = self.requests[request_id]
+        return StatusResponse(
+            request_id=request_id,
+            status=request["status"],
+            cache_hit=request.get("cache_hit", False),
+            queue_position=request.get("queue_position"),
+            error=request.get("error")
+        )
+    
+    async def get_result(self, request_id: str) -> Optional[ResultResponse]:
+        if request_id not in self.requests:
+            return None
+            
+        request = self.requests[request_id]
+        if request["status"] != "completed":
+            return ResultResponse(
+                request_id=request_id,
+                error="Result not ready" if request["status"] == "pending" else request.get("error")
+            )
+            
+        return ResultResponse(
+            request_id=request_id,
+            embedding=request["embedding"],
+            cache_hit=request["cache_hit"]
+        )

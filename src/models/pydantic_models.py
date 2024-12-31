@@ -1,53 +1,37 @@
-from pydantic import BaseModel, validator
+from pydantic import BaseModel, Field
+from typing import Optional, List, Union
 from enum import Enum
-from typing import Optional, List, Dict
 
-class PriorityEnum(str, Enum):
-    HIGH = "high"
+class Priority(str, Enum):
     LOW = "low"
+    MEDIUM = "medium"
+    HIGH = "high"
 
-class EmbeddingRequestModel(BaseModel):
+class EmbeddingRequest(BaseModel):
     text: str
-    priority: PriorityEnum = PriorityEnum.LOW
+    priority: Priority = Field(default=Priority.MEDIUM)
 
-    @validator('text')
-    def validate_text(cls, v):
-        if not v or not v.strip():
-            raise ValueError('Text cannot be empty')
-        if len(v) > 10000:
-            raise ValueError('Text is too long (max 10000 characters)')
-        return v.strip()
+class EmbeddingResponse(BaseModel):
+    request_id: str
+    status: str = "pending"
 
-class EmbeddingResponseModel(BaseModel):
-    embedding: Optional[List[float]] = None
-    error: Optional[str] = None
-    cached: bool = False
-    processing_time: Optional[float] = None
-
-class DetailedStatusResponse(BaseModel):
+class StatusResponse(BaseModel):
+    request_id: str
     status: str
-    submit_time: Optional[str]
-    queue_enter_time: Optional[str]
-    processing_start_time: Optional[str]
-    completion_time: Optional[str]
-    cache_hit: Optional[bool]
-    error: Optional[str]
-    text_preview: str
-    priority: str
-    time_in_queue: Optional[float]
-    processing_duration: Optional[float]
-    total_duration: Optional[float]
+    cache_hit: bool = False
+    queue_position: Optional[int] = None
+    error: Optional[str] = None
 
-class MetricsResponse(BaseModel):
-    total_requests: int
-    cache_hits: int
-    cache_misses: int
-    cache_hit_ratio: float
-    average_processing_time_ms: float
-    p95_processing_time_ms: float
-    total_errors: int
-    error_rate: float
-    requests_by_priority: Dict[str, int]
-    current_queue_length: int
-    average_queue_length: float
-    system_metrics: Dict[str, float]
+class ResultResponse(BaseModel):
+    request_id: str
+    embedding: Optional[List[float]] = None
+    cache_hit: bool = False
+    error: Optional[str] = None
+
+class SyncEmbeddingRequest(BaseModel):
+    text: str
+    use_cache: bool = True
+
+class SyncEmbeddingResponse(BaseModel):
+    embedding: List[float]
+    cache_hit: bool = False

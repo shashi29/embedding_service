@@ -1,0 +1,15 @@
+2024-12-31 12:53:19,269 - embedding_service - INFO - Loaded configuration from config/config.yaml
+2024-12-31 12:53:19,275 - embedding_service - INFO - Starting up embedding service
+2024-12-31 12:53:20,596 - embedding_service - INFO - Loaded configuration from config/config.yaml
+2024-12-31 12:53:20,609 - embedding_service - INFO - Starting up embedding service
+2024-12-31 12:57:58,287 - embedding_service - INFO - Shutting down embedding service
+2024-12-31 12:57:59,677 - embedding_service - INFO - Loaded configuration from config/config.yaml
+2024-12-31 12:57:59,697 - embedding_service - INFO - Starting up embedding service
+2024-12-31 12:58:01,009 - embedding_service - INFO - Loaded configuration from config/config.yaml
+2024-12-31 12:58:01,024 - embedding_service - INFO - Starting up embedding service
+2024-12-31 12:59:28,999 - embedding_service - INFO - Cached embedding for text: Software engineer with 5+ years of experience in P...
+2024-12-31 12:59:41,822 - embedding_service - INFO - Cache hit for text: Software engineer with 5+ years of experience in P...
+2024-12-31 13:00:59,469 - embedding_service - INFO - Cache hit for text: Software engineer with 5+ years of experience in P...
+2024-12-31 13:01:50,963 - embedding_service - INFO - Queued request f1725d60-452e-4b60-b0fb-f4aff0e35d45 with priority medium
+2024-12-31 13:01:52,049 - embedding_service - INFO - Cached embedding for text: Software engineer with 5+ years of experience in P...
+2024-12-31 13:01:52,049 - embedding_service - INFO - Processed request f1725d60-452e-4b60-b0fb-f4aff0e35d45

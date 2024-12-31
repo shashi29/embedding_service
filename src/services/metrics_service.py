@@ -1,84 +1,62 @@
-import threading
-import statistics
+from typing import Dict
+import time
 from collections import defaultdict
-from datetime import datetime
-import psutil
+from src.utils.logger import get_logger
 
-class ServiceMetrics:
-    def __init__(self, history_size: int = 100):
-        self.request_count = 0
-        self.cache_hits = 0
-        self.cache_misses = 0
-        self.processing_times = []
-        self.errors = 0
-        self.queue_lengths_history = []
-        self.requests_by_priority = defaultdict(int)
-        self.lock = threading.Lock()
-        self.max_history = history_size
+class MetricsService:
+    def __init__(self):
+        self.logger = get_logger()
+        self.metrics = {
+            "requests_total": 0,
+            "requests_cached": 0,
+            "requests_failed": 0,
+            "processing_times": [],
+            "cache_hit_rate": 0.0,
+            "requests_by_priority": defaultdict(int),
+            "average_queue_time": 0.0,
+            "current_queue_size": 0
+        }
+        self.request_timestamps: Dict[str, float] = {}
 
-    def add_request(self, priority: str):
-        with self.lock:
-            self.request_count += 1
-            self.requests_by_priority[priority] += 1
+    async def track_request_start(self, request_id: str, priority: str):
+        self.metrics["requests_total"] += 1
+        self.metrics["requests_by_priority"][priority] += 1
+        self.request_timestamps[request_id] = time.time()
+        self.metrics["current_queue_size"] += 1
 
-    def add_processing_time(self, duration: float):
-        with self.lock:
-            self.processing_times.append(duration)
-            if len(self.processing_times) > self.max_history:
-                self.processing_times.pop(0)
+    async def track_request_complete(self, request_id: str, cache_hit: bool):
+        if request_id in self.request_timestamps:
+            processing_time = time.time() - self.request_timestamps[request_id]
+            self.metrics["processing_times"].append(processing_time)
+            
+            if len(self.metrics["processing_times"]) > 1000:
+                self.metrics["processing_times"] = self.metrics["processing_times"][-1000:]
+            
+            if cache_hit:
+                self.metrics["requests_cached"] += 1
 
-    def add_cache_hit(self):
-        with self.lock:
-            self.cache_hits += 1
+            self.metrics["cache_hit_rate"] = (
+                self.metrics["requests_cached"] / self.metrics["requests_total"]
+                if self.metrics["requests_total"] > 0 else 0.0
+            )
+            
+            self.metrics["current_queue_size"] = max(0, self.metrics["current_queue_size"] - 1)
+            del self.request_timestamps[request_id]
 
-    def add_cache_miss(self):
-        with self.lock:
-            self.cache_misses += 1
+    async def track_request_failed(self, request_id: str):
+        self.metrics["requests_failed"] += 1
+        self.metrics["current_queue_size"] = max(0, self.metrics["current_queue_size"] - 1)
+        if request_id in self.request_timestamps:
+            del self.request_timestamps[request_id]
 
-    def add_error(self):
-        with self.lock:
-            self.errors += 1
+    async def get_metrics(self):
+        return {
+            **self.metrics,
+            "average_processing_time": (
+                sum(self.metrics["processing_times"]) / len(self.metrics["processing_times"])
+                if self.metrics["processing_times"] else 0.0
+            )
+        }
 
-    def add_queue_length(self, length: int):
-        with self.lock:
-            self.queue_lengths_history.append(length)
-            if len(self.queue_lengths_history) > self.max_history:
-                self.queue_lengths_history.pop(0)
-
-    def get_metrics(self) -> dict:
-        with self.lock:
-            processing_times = self.processing_times[-self.max_history:]
-            avg_processing_time = statistics.mean(processing_times) if processing_times else 0
-            p95_processing_time = statistics.quantiles(processing_times, n=20)[-1] if len(processing_times) >= 20 else 0
-            process = psutil.Process()
-            memory_info = process.memory_info()
-            return {
-                "total_requests": self.request_count,
-                "cache_hits": self.cache_hits,
-                "cache_misses": self.cache_misses,
-                "cache_hit_ratio": self.cache_hits / (self.cache_hits + self.cache_misses) if (self.cache_hits + self.cache_misses) > 0 else 0,
-                "average_processing_time_ms": round(avg_processing_time * 1000, 2),
-                "p95_processing_time_ms": round(p95_processing_time * 1000, 2),
-                "total_errors": self.errors,
-                "error_rate": self.errors / self.request_count if self.request_count > 0 else 0,
-                "requests_by_priority": dict(self.requests_by_priority),
-                "current_queue_length": self.queue_lengths_history[-1] if self.queue_lengths_history else 0,
-                "average_queue_length": statistics.mean(self.queue_lengths_history) if self.queue_lengths_history else 0,
-                "system_metrics": {
-                    "cpu_percent": process.cpu_percent(),
-                    "memory_usage_mb": memory_info.rss / (1024 * 1024),
-                    "memory_percent": process.memory_percent(),
-                    "threads": process.num_threads(),
-                    "open_files": len(process.open_files()),
-                }
-            }
-
-    def reset_metrics(self):
-        with self.lock:
-            self.request_count = 0
-            self.cache_hits = 0
-            self.cache_misses = 0
-            self.processing_times = []
-            self.errors = 0
-            self.queue_lengths_history = []
-            self.requests_by_priority = defaultdict(int)
+    # async def reset_metrics(self):
+    #     self.__init__()

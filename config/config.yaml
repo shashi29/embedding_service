@@ -1,25 +1,20 @@
-model:
-  name: "all-MiniLM-L6-v2"
-  cache_ttl: 86400
-  batch_size: 32
+cache:
+  max_size: 10000
+  ttl: 3600  # 1 hour in seconds
 
-redis:
-  host: "localhost"
-  port: 6379
-  db: 0
+worker:
+  batch_size: 10
+  max_queue_size: 1000
+  processing_timeout: 30  # seconds
 
-server:
-  host: "0.0.0.0"
-  port: 8000
+api:
+  max_text_length: 10000
+  rate_limit: 100  # requests per minute
+
+logging:
+  level: INFO
+  file: embedding_service.log
 
 metrics:
-  history_size: 100
-  max_text_preview: 50
-
-constants:
-  DEFAULT_MODEL: "all-MiniLM-L6-v2"
-  DEFAULT_CACHE_TTL: 86400
-  MAX_TEXT_LENGTH: 10000
-  METRICS_HISTORY_SIZE: 100
-  QUEUE_TIMEOUT: 300
-  MAX_RETRY_ATTEMPTS: 3
+  enabled: true
+  collection_interval: 60  # seconds
