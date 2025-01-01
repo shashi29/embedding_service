@@ -17,8 +17,5 @@ async def system_status():
     metrics = await MetricsService().get_metrics()
     return {
         "status": "operational",
-        "current_queue_size": metrics["current_queue_size"],
-        "cache_hit_rate": metrics["cache_hit_rate"],
-        "total_requests_processed": metrics["requests_total"],
-        "average_processing_time": metrics["average_processing_time"]
+        **metrics
     }
