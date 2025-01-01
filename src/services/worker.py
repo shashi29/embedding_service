@@ -2,6 +2,8 @@ from typing import Dict, Optional
 import asyncio
 from collections import deque
 import numpy as np
+from sentence_transformers import SentenceTransformer
+
 from src.utils.logger import get_logger
 from src.services.cache_service import CacheService
 from src.services.request_tracker import RequestTracker
@@ -24,6 +26,7 @@ class WorkerService:
         
         # Start the worker
         asyncio.create_task(self._process_queue())
+        self.model = SentenceTransformer("mixedbread-ai/mxbai-embed-large-v1")
     
     async def queue_request(self, request_id: str, request: EmbeddingRequest):
         self.queues[request.priority].append((request_id, request))
@@ -33,8 +36,8 @@ class WorkerService:
     
     async def process_text(self, text: str) -> list[float]:
         """Simulate embedding generation"""
-        await asyncio.sleep(1)  # Simulate processing time
-        return list(np.random.random(384).tolist())
+        #await asyncio.sleep(1)  # Simulate processing time
+        return self.model.encode(text).tolist()
     
     async def _process_queue(self):
         while True:
