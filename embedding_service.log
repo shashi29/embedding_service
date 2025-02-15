@@ -17650,3 +17650,8 @@
 2025-01-01 00:27:21,783 - embedding_service - INFO - Shutting down embedding service
 2025-01-01 00:29:47,133 - embedding_service - INFO - Loaded configuration from config/config.yaml
 2025-01-01 00:29:47,153 - embedding_service - INFO - Starting up embedding service
+2025-02-14 18:47:16,919 - embedding_service - INFO - Loaded configuration from config/config.yaml
+2025-02-14 18:47:16,930 - embedding_service - INFO - Starting up embedding service
+2025-02-14 18:58:47,426 - embedding_service - INFO - Shutting down embedding service
+2025-02-14 19:16:40,745 - embedding_service - INFO - Loaded configuration from config/config.yaml
+2025-02-14 19:16:40,756 - embedding_service - INFO - Starting up embedding service

@@ -1,7 +1,7 @@
 Development mode (single worker with reload):
-bashCopypython server.py --env development
+python server.py --env development
 Production mode (multiple workers):
-bashCopypython server.py --env production --workers 4
+python server.py --env production --workers 4
 Or using environment variables:
 bashCopyENVIRONMENT=production WORKERS=4 python server.py
 Remember that when using multiple workers:
